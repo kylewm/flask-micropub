@@ -11,8 +11,8 @@ from setuptools import setup
 
 setup(
     name='Flask-Micropub',
-    version='0.1',
-    url='https://indiewebcamp.com/Flask-Micropub/',
+    version='0.1.1',
+    url='https://github.com/kylewm/flask-micropub/',
     license='BSD',
     author='Kyle Mahan',
     author_email='kyle@kylewm.com',
@@ -32,6 +32,7 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
+        'Development Status :: 3 - Alpha',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',

@@ -16,13 +16,15 @@ def micropub_callback(resp):
       <body>
         <ul>
           <li>me: {}</li>
+          <li>endpoint: {}</li>
           <li>token: {}</li>
           <li>next: {}</li>
           <li>error: {}</li>
         </ul>
       </body>
     </html>
-    """.format(resp.me, resp.access_token, resp.next_url, resp.error)
+    """.format(resp.me, resp.micropub_endpoint, resp.access_token,
+               resp.next_url, resp.error)
 
 
 @app.route('/')

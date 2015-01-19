@@ -178,8 +178,8 @@ class Micropub:
 
         # success!
         access_token = tdata.get('access_token')[0]
-        return AuthResponse(me=confirmed_me, access_token=access_token,
-                            next_url=next_url)
+        return AuthResponse(me=confirmed_me, micropub_endpoint=micropub_url,
+                            access_token=access_token, next_url=next_url)
 
     def _discover_endpoints(self, me):
         me_response = requests.get(me)
@@ -202,6 +202,7 @@ class AuthResponse:
     Attributes:
       me (string): The authenticated user's URL. This will be non-None if and
         only if the user was successfully authenticated.
+      micropub_endpoint (string): The endpoint to POST micropub requests to.
       access_token (string): The authorized user's micropub access token.
       next_url (string): The optional URL that was passed to authorize.
       error (string): describes the error encountered if any. It is possible
@@ -209,8 +210,10 @@ class AuthResponse:
         will fail, in which case me will be non-None, and error will describe
         this condition.
     """
-    def __init__(self, me=None, access_token=None, next_url=None, error=None):
+    def __init__(self, me=None, micropub_endpoint=None,
+                 access_token=None, next_url=None, error=None):
         self.me = me
+        self.micropub_endpoint = micropub_endpoint
         self.access_token = access_token
         self.next_url = next_url
         self.error = error
