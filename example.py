@@ -1,10 +1,10 @@
 from flask import Flask, request, url_for
-from flask.ext.micropub import Micropub
+from flask.ext.micropub import MicropubClient
 
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'my super secret key'
-micropub = Micropub(app)
+micropub = MicropubClient(app)
 
 
 @app.route('/micropub-callback')

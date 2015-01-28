@@ -21,7 +21,7 @@ else:
     from urllib.parse import urlencode, parse_qs
 
 
-class Micropub:
+class MicropubClient:
     """Flask-Micropub provides support for IndieAuth/Micropub
     authentication and authorization.
 
@@ -139,7 +139,8 @@ class Micropub:
             return AuthResponse(
                 next_url=next_url,
                 error='authorization failed. {}: {}'.format(
-                    rdata.get('error'), rdata.get('error_description')))
+                    next(rdata.get('error', []), None),
+                    next(rdata.get('error_description', []), None)))
 
         if 'me' not in rdata:
             return AuthResponse(
