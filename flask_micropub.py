@@ -136,11 +136,13 @@ class MicropubClient:
 
         rdata = parse_qs(response.text)
         if response.status_code != 200:
+            error_vals = rdata.get('error')
+            error_descs = rdata.get('error_description')
             return AuthResponse(
                 next_url=next_url,
                 error='authorization failed. {}: {}'.format(
-                    next(rdata.get('error', []), None),
-                    next(rdata.get('error_description', []), None)))
+                    error_vals[0] if error_vals else 'Unknown Error',
+                    error_descs[0] if error_descs else 'Unknown Error'))
 
         if 'me' not in rdata:
             return AuthResponse(
