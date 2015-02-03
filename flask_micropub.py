@@ -127,12 +127,15 @@ class MicropubClient:
         client_id = ''
 
         # validate the authorization code
+        flask.current_app.logger.debug('Flask-Micropub: checking code against auth url: %s', auth_url)
         response = requests.post(auth_url, data={
             'code': code,
             'client_id': client_id,
             'redirect_uri': redirect_uri,
             'state': state,
         })
+        flask.current_app.logger.debug('Flask-Micropub: auth response: %d - %s',
+                                       response.status_code, response.text)
 
         rdata = parse_qs(response.text)
         if response.status_code != 200:
@@ -158,6 +161,7 @@ class MicropubClient:
                 error='no micropub endpoint found.')
 
         # request an access token
+        flask.current_app.logger.debug('Flask-Micropub: requesting access token from: %s', token_url)
         token_response = requests.post(token_url, data={
             'code': code,
             'me': confirmed_me,
@@ -165,6 +169,8 @@ class MicropubClient:
             'client_id': client_id,
             'state': state,
         })
+        flask.current_app.logger.debug('Flask-Micropub: token response: %d - %s',
+                                       token_response.status_code, token_response.text)
 
         if token_response.status_code != 200:
             return AuthResponse(
