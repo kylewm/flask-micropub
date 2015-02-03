@@ -32,6 +32,7 @@ class MicropubClient:
     """
     def __init__(self, app=None, client_id=None):
         self.app = app
+        self.client_id = client_id
         if app is not None:
             self.init_app(app, client_id)
 
@@ -45,10 +46,11 @@ class MicropubClient:
             displayed when the user is asked to authorize this client. If not
             provided, the app name will be used.
         """
-        if client_id:
-            self.client_id = client_id
-        else:
-            self.client_id = app.name
+        if not self.client_id:
+            if client_id:
+                self.client_id = client_id
+            else:
+                self.client_id = app.name
 
     def authorize(self, me, redirect_url, next_url=None, scope='read'):
         """Authorize a user via Micropub.
@@ -87,10 +89,8 @@ class MicropubClient:
             'client_id': self.client_id,
             'redirect_uri': redirect_url,
             'scope': scope,
+            'state': next_url or '',
         }
-
-        if next_url:
-            auth_params['state'] = next_url
 
         return flask.redirect(
             auth_url + '?' + urlencode(auth_params))
@@ -109,7 +109,7 @@ class MicropubClient:
         redirect_uri = flask.url_for(flask.request.endpoint, _external=True)
         access_token = None
         state = flask.request.args.get('state')
-        next_url = state
+        next_url = state if state != '' else None
 
         if '_micropub_endpoints' in flask.session:
             auth_url, token_url, micropub_url \
@@ -124,17 +124,16 @@ class MicropubClient:
                 next_url=next_url, error='no authorization endpoint')
 
         code = flask.request.args.get('code')
-        client_id = ''
 
         # validate the authorization code
         flask.current_app.logger.debug('Flask-Micropub: checking code against auth url: %s', auth_url)
         response = requests.post(auth_url, data={
             'code': code,
-            'client_id': client_id,
+            'client_id': self.client_id,
             'redirect_uri': redirect_uri,
             'state': state,
         })
-        flask.current_app.logger.debug('Flask-Micropub: auth response: %d - %s',
+        flask.current_app.logger.debug('Flask-Micropub: auth response: %d - %s', 
                                        response.status_code, response.text)
 
         rdata = parse_qs(response.text)
@@ -166,10 +165,10 @@ class MicropubClient:
             'code': code,
             'me': confirmed_me,
             'redirect_uri': redirect_uri,
-            'client_id': client_id,
+            'client_id': self.client_id,
             'state': state,
         })
-        flask.current_app.logger.debug('Flask-Micropub: token response: %d - %s',
+        flask.current_app.logger.debug('Flask-Micropub: token response: %d - %s', 
                                        token_response.status_code, token_response.text)
 
         if token_response.status_code != 200:
