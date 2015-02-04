@@ -33,7 +33,7 @@ def index():
     if me:
         return micropub.authorize(
             me, redirect_url=url_for('micropub_callback', _external=True),
-            scope=request.args.get('scope'))
+            next_url=url_for('index'), scope=request.args.get('scope'))
     return """
     <!DOCTYPE html>
     <html>

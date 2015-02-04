@@ -12,6 +12,7 @@ import requests
 import bs4
 import flask
 import functools
+import uuid
 
 import sys
 if sys.version < '3':
@@ -76,24 +77,23 @@ class MicropubClient:
         if not auth_url:
             auth_url = 'https://indieauth.com/auth'
 
+        csrf_token = uuid.uuid4().hex
+        flask.session['_micropub_csrf_token'] = csrf_token
         # save the endpoints so we don't have to scrape the target page again
         # right awway
-        try:
-            flask.session['_micropub_endpoints'] = (auth_url, token_url,
-                                                    micropub_url)
-        except RuntimeError:
-            pass  # we'll look it up again later
+        flask.session['_micropub_endpoints'] = (
+            auth_url, token_url, micropub_url)
 
-        auth_params = {
+        auth_url = auth_url + '?' + urlencode({
             'me': me,
             'client_id': self.client_id,
             'redirect_uri': redirect_url,
             'scope': scope,
-            'state': next_url or '',
-        }
+            'state': '{}|{}'.format(csrf_token, next_url or ''),
+        })
+        flask.current_app.logger.debug('redirecting to %s', auth_url)
 
-        return flask.redirect(
-            auth_url + '?' + urlencode(auth_params))
+        return flask.redirect(auth_url)
 
     def authorized_handler(self, f):
         """Decorates the authorization callback endpoint. The endpoint should
@@ -106,10 +106,21 @@ class MicropubClient:
         return decorated
 
     def _handle_response(self):
-        redirect_uri = flask.url_for(flask.request.endpoint, _external=True)
         access_token = None
+        redirect_uri = flask.url_for(flask.request.endpoint, _external=True)
         state = flask.request.args.get('state')
-        next_url = state if state != '' else None
+        if state and '|' in state:
+            csrf_token, next_url = state.split('|', 1)
+        else:
+            csrf_token = next_url = None
+
+        if not csrf_token:
+            return AuthResponse(
+                next_url=next_url, error='no CSRF token in response')
+
+        if csrf_token != flask.session.get('_micropub_csrf_token'):
+            return AuthResponse(
+                next_url=next_url, error='mismatched CSRF token')
 
         if '_micropub_endpoints' in flask.session:
             auth_url, token_url, micropub_url \
@@ -126,15 +137,19 @@ class MicropubClient:
         code = flask.request.args.get('code')
 
         # validate the authorization code
-        flask.current_app.logger.debug('Flask-Micropub: checking code against auth url: %s', auth_url)
-        response = requests.post(auth_url, data={
+        auth_data = {
             'code': code,
             'client_id': self.client_id,
             'redirect_uri': redirect_uri,
             'state': state,
-        })
-        flask.current_app.logger.debug('Flask-Micropub: auth response: %d - %s', 
-                                       response.status_code, response.text)
+        }
+        flask.current_app.logger.debug(
+            'Flask-Micropub: checking code against auth url: %s, data: %s',
+            auth_url, auth_data)
+        response = requests.post(auth_url, data=auth_data)
+        flask.current_app.logger.debug(
+            'Flask-Micropub: auth response: %d - %s', response.status_code,
+            response.text)
 
         rdata = parse_qs(response.text)
         if response.status_code != 200:
@@ -160,16 +175,20 @@ class MicropubClient:
                 error='no micropub endpoint found.')
 
         # request an access token
-        flask.current_app.logger.debug('Flask-Micropub: requesting access token from: %s', token_url)
-        token_response = requests.post(token_url, data={
+        token_data = {
             'code': code,
             'me': confirmed_me,
             'redirect_uri': redirect_uri,
             'client_id': self.client_id,
             'state': state,
-        })
-        flask.current_app.logger.debug('Flask-Micropub: token response: %d - %s', 
-                                       token_response.status_code, token_response.text)
+        }
+        flask.current_app.logger.debug(
+            'Flask-Micropub: requesting access token from: %s, data: %s',
+            token_url, token_data)
+        token_response = requests.post(token_url, data=token_data)
+        flask.current_app.logger.debug(
+            'Flask-Micropub: token response: %d - %s',
+            token_response.status_code, token_response.text)
 
         if token_response.status_code != 200:
             return AuthResponse(
