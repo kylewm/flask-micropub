@@ -69,7 +69,8 @@ class MicropubClient:
           https://indieauth.com/auth if none is provided.
         """
         redirect_url = flask.url_for(
-            self._authenticated_handler.func_name, _external=True)
+            self.flask_endpoint_for_function(self._authenticated_handler),
+            _external=True)
         return self._start_indieauth(me, redirect_url, next_url, None)
 
     def authorize(self, me, next_url=None, scope='read'):
@@ -89,7 +90,8 @@ class MicropubClient:
           https://indieauth.com/auth if none is provided.
         """
         redirect_url = flask.url_for(
-            self._authorized_handler.func_name, _external=True)
+            self.flask_endpoint_for_function(self._authorized_handler),
+            _external=True)
         return self._start_indieauth(me, redirect_url, next_url, scope)
 
     def _start_indieauth(self, me, redirect_url, next_url, scope):
@@ -295,6 +297,12 @@ class MicropubClient:
         return (auth_endpoint and auth_endpoint['href'],
                 token_endpoint and token_endpoint['href'],
                 micropub_endpoint and micropub_endpoint['href'])
+
+    @staticmethod
+    def flask_endpoint_for_function(func):
+        for endpt, view_func in flask.current_app.view_functions.items():
+            if func == view_func:
+                return endpt
 
 
 class AuthResponse:
