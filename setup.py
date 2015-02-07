@@ -3,15 +3,15 @@ Flask-Micropub
 --------------
 
 This extension adds the ability to login to a Flask-based website
-using [IndieAuth](https://indiewebcamp.com/IndieAuth), and to request
-an [Micropub](https://indiewebcamp.com/Micropub) access token.
+using IndieAuth (https://indiewebcamp.com/IndieAuth), and to request
+a Micropub (https://indiewebcamp.com/Micropub) access token.
 """
 from setuptools import setup
 
 
 setup(
     name='Flask-Micropub',
-    version='0.1.4',
+    version='0.2.0',
     url='https://github.com/kylewm/flask-micropub/',
     license='BSD',
     author='Kyle Mahan',
