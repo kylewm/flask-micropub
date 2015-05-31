@@ -11,7 +11,7 @@ from setuptools import setup
 
 setup(
     name='Flask-Micropub',
-    version='0.2.0',
+    version='0.2.2',
     url='https://github.com/kylewm/flask-micropub/',
     license='BSD',
     author='Kyle Mahan',

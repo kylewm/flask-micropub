@@ -1,6 +1,17 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## 0.2.2
+## Changed
+- Fix vulnerability; re-discover the authorization_endpoint and
+  token_endpoint at each stage in the flow. Prevents a buggy or
+  malicious authorization_endpoint from giving you credentials for
+  another user's domain name.
+
+## 0.2.1 - 2015-02-07
+## Changed
+- Updated setup.py, no functional changes
+
 ## 0.2.0 - 2015-02-07
 ### Changed
 - Started keeping a changelog!

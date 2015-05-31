@@ -121,10 +121,6 @@ class MicropubClient:
 
         csrf_token = uuid.uuid4().hex
         flask.session['_micropub_csrf_token'] = csrf_token
-        # save the endpoints so we don't have to scrape the target page again
-        # right awway
-        flask.session['_micropub_endpoints'] = (
-            auth_url, token_url, micropub_url)
 
         auth_params = {
             'me': me,
@@ -165,6 +161,7 @@ class MicropubClient:
     def _handle_authenticate_response(self):
         code = flask.request.args.get('code')
         state = flask.request.args.get('state')
+        me = flask.request.args.get('me')
         redirect_uri = flask.url_for(flask.request.endpoint, _external=True)
 
         if state and '|' in state:
@@ -180,11 +177,7 @@ class MicropubClient:
             return AuthResponse(
                 next_url=next_url, error='mismatched CSRF token')
 
-        if '_micropub_endpoints' in flask.session:
-            auth_url = flask.session['_micropub_endpoints'][0]
-        else:
-            auth_url = self._discover_endpoints(
-                flask.request.args.get('me'))[0]
+        auth_url = self._discover_endpoints(me)[0]
 
         if not auth_url:
             return AuthResponse(
@@ -227,16 +220,13 @@ class MicropubClient:
         authenticate_response = self._handle_authenticate_response()
         code = flask.request.args.get('code')
         state = flask.request.args.get('state')
+        me = flask.request.args.get('me')
         redirect_uri = flask.url_for(flask.request.endpoint, _external=True)
 
         if authenticate_response.error:
             return authenticate_response
 
-        if '_micropub_endpoints' in flask.session:
-            _, token_url, micropub_url = flask.session['_micropub_endpoints']
-        else:
-            _, token_url, micropub_url = self._discover_endpoints(
-                flask.request.args.get('me'))
+        token_url, micropub_url = self._discover_endpoints(me)[1:]
 
         if not token_url or not micropub_url:
             # successfully auth'ed user, no micropub endpoint
