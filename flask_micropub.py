@@ -21,6 +21,8 @@ if sys.version < '3':
 else:
     from urllib.parse import urlencode, parse_qs
 
+DEFAULT_AUTH_URL = 'https://indieauth.com/auth'
+
 
 class MicropubClient:
     """Flask-Micropub provides support for IndieAuth/Micropub
@@ -117,7 +119,7 @@ class MicropubClient:
             me = 'http://' + me
         auth_url, token_url, micropub_url = self._discover_endpoints(me)
         if not auth_url:
-            auth_url = 'https://indieauth.com/auth'
+            auth_url = DEFAULT_AUTH_URL
 
         csrf_token = uuid.uuid4().hex
         flask.session['_micropub_csrf_token'] = csrf_token
@@ -178,10 +180,8 @@ class MicropubClient:
                 next_url=next_url, error='mismatched CSRF token')
 
         auth_url = self._discover_endpoints(me)[0]
-
         if not auth_url:
-            return AuthResponse(
-                next_url=next_url, error='no authorization endpoint')
+            auth_url = DEFAULT_AUTH_URL
 
         # validate the authorization code
         auth_data = {
