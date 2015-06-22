@@ -1,6 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## 0.2.3
+## Changed
+- Fix; fall back to indieauth.com when no authorization_endpoint is
+  specified (previous fix broke this).
+
 ## 0.2.2
 ## Changed
 - Fix vulnerability; re-discover the authorization_endpoint and
