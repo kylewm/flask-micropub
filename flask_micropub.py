@@ -55,16 +55,17 @@ class MicropubClient:
             else:
                 self.client_id = app.name
 
-    def authenticate(self, me, next_url=None):
+    def authenticate(self, me, state=None, next_url=None):
         """Authenticate a user via IndieAuth.
 
         Args:
           me (string): the authing user's URL. if it does not begin with
             https?://, http:// will be prepended.
-          next_url (string, optional): passed through the whole auth process,
-            useful if you want to redirect back to a starting page when auth
-            is complete.
-            scopes. 'read' by default.
+          state (string, optional): passed through the whole auth process,
+            useful if you want to maintain some state, e.g. the starting page
+            to return to when auth is complete.
+          next_url (string, optional): deprecated and replaced by the more
+            general "state". still here for backward compatibility.
 
         Returns:
           a redirect to the user's specified authorization url, or
@@ -73,17 +74,19 @@ class MicropubClient:
         redirect_url = flask.url_for(
             self.flask_endpoint_for_function(self._authenticated_handler),
             _external=True)
-        return self._start_indieauth(me, redirect_url, next_url, None)
+        return self._start_indieauth(me, redirect_url, state or next_url, None)
 
-    def authorize(self, me, next_url=None, scope='read'):
+    def authorize(self, me, state=None, next_url=None, scope='read'):
         """Authorize a user via Micropub.
 
         Args:
           me (string): the authing user's URL. if it does not begin with
             https?://, http:// will be prepended.
-          next_url (string, optional): passed through the whole auth process,
-            useful if you want to redirect back to a starting page when auth
-            is complete.
+          state (string, optional): passed through the whole auth process,
+            useful if you want to maintain some state, e.g. the starting page
+            to return to when auth is complete.
+          next_url (string, optional): deprecated and replaced by the more
+            general "state". still here for backward compatibility.
           scope (string, optional): a space-separated string of micropub
             scopes. 'read' by default.
 
@@ -94,9 +97,10 @@ class MicropubClient:
         redirect_url = flask.url_for(
             self.flask_endpoint_for_function(self._authorized_handler),
             _external=True)
-        return self._start_indieauth(me, redirect_url, next_url, scope)
+        return self._start_indieauth(
+            me, redirect_url, state or next_url, scope)
 
-    def _start_indieauth(self, me, redirect_url, next_url, scope):
+    def _start_indieauth(self, me, redirect_url, state, scope):
         """Helper for both authentication and authorization. Kicks off
         IndieAuth by fetching the authorization endpoint from the user's
         homepage and redirecting to it.
@@ -105,9 +109,9 @@ class MicropubClient:
           me (string): the authing user's URL. if it does not begin with
             https?://, http:// will be prepended.
           redirect_url: the callback URL that we pass to the auth endpoint.
-          next_url (string, optional): passed through the whole auth process,
-            useful if you want to redirect back to a starting page when auth
-            is complete.
+          state (string, optional): passed through the whole auth process,
+            useful if you want to maintain some state, e.g. the url to return
+            to when the process is complete.
           scope (string): a space-separated string of micropub scopes.
 
         Returns:
@@ -128,7 +132,7 @@ class MicropubClient:
             'me': me,
             'client_id': self.client_id,
             'redirect_uri': redirect_url,
-            'state': '{}|{}'.format(csrf_token, next_url or ''),
+            'state': '{}|{}'.format(csrf_token, state or ''),
         }
         if scope:
             auth_params['scope'] = scope
@@ -162,22 +166,22 @@ class MicropubClient:
 
     def _handle_authenticate_response(self):
         code = flask.request.args.get('code')
-        state = flask.request.args.get('state')
+        wrapped_state = flask.request.args.get('state')
         me = flask.request.args.get('me')
         redirect_uri = flask.url_for(flask.request.endpoint, _external=True)
 
-        if state and '|' in state:
-            csrf_token, next_url = state.split('|', 1)
+        if wrapped_state and '|' in wrapped_state:
+            csrf_token, state = wrapped_state.split('|', 1)
         else:
-            csrf_token = next_url = None
+            csrf_token = state = None
 
         if not csrf_token:
             return AuthResponse(
-                next_url=next_url, error='no CSRF token in response')
+                state=state, error='no CSRF token in response')
 
         if csrf_token != flask.session.get('_micropub_csrf_token'):
             return AuthResponse(
-                next_url=next_url, error='mismatched CSRF token')
+                state=state, error='mismatched CSRF token')
 
         auth_url = self._discover_endpoints(me)[0]
         if not auth_url:
@@ -188,7 +192,7 @@ class MicropubClient:
             'code': code,
             'client_id': self.client_id,
             'redirect_uri': redirect_uri,
-            'state': state,
+            'state': wrapped_state,
         }
         flask.current_app.logger.debug(
             'Flask-Micropub: checking code against auth url: %s, data: %s',
@@ -203,23 +207,23 @@ class MicropubClient:
             error_vals = rdata.get('error')
             error_descs = rdata.get('error_description')
             return AuthResponse(
-                next_url=next_url,
+                state=state,
                 error='authorization failed. {}: {}'.format(
                     error_vals[0] if error_vals else 'Unknown Error',
                     error_descs[0] if error_descs else 'Unknown Error'))
 
         if 'me' not in rdata:
             return AuthResponse(
-                next_url=next_url,
+                state=state,
                 error='missing "me" in response')
 
         confirmed_me = rdata.get('me')[0]
-        return AuthResponse(me=confirmed_me, next_url=next_url)
+        return AuthResponse(me=confirmed_me, state=state)
 
     def _handle_authorize_response(self):
         authenticate_response = self._handle_authenticate_response()
         code = flask.request.args.get('code')
-        state = flask.request.args.get('state')
+        wrapped_state = flask.request.args.get('state')
         me = flask.request.args.get('me')
         redirect_uri = flask.url_for(flask.request.endpoint, _external=True)
 
@@ -232,7 +236,7 @@ class MicropubClient:
             # successfully auth'ed user, no micropub endpoint
             return AuthResponse(
                 me=authenticate_response.me,
-                next_url=authenticate_response.next_url,
+                state=authenticate_response.state,
                 error='no micropub endpoint found.')
 
         # request an access token
@@ -241,7 +245,7 @@ class MicropubClient:
             'me': authenticate_response.me,
             'redirect_uri': redirect_uri,
             'client_id': self.client_id,
-            'state': state,
+            'state': wrapped_state,
         }
         flask.current_app.logger.debug(
             'Flask-Micropub: requesting access token from: %s, data: %s',
@@ -254,7 +258,7 @@ class MicropubClient:
         if token_response.status_code != 200:
             return AuthResponse(
                 me=authenticate_response.me,
-                next_url=authenticate_response.next_url,
+                state=authenticate_response.state,
                 error='bad response from token endpoint: {}'
                 .format(token_response))
 
@@ -262,7 +266,7 @@ class MicropubClient:
         if 'access_token' not in tdata:
             return AuthResponse(
                 me=authenticate_response.me,
-                next_url=authenticate_response.next_url,
+                state=authenticate_response.state,
                 error='response from token endpoint missing access_token: {}'
                 .format(tdata))
 
@@ -272,7 +276,7 @@ class MicropubClient:
             me=authenticate_response.me,
             micropub_endpoint=micropub_url,
             access_token=access_token,
-            next_url=authenticate_response.next_url)
+            state=authenticate_response.state)
 
     def _discover_endpoints(self, me):
         me_response = requests.get(me)
@@ -303,16 +307,16 @@ class AuthResponse:
         only if the user was successfully authenticated.
       micropub_endpoint (string): The endpoint to POST micropub requests to.
       access_token (string): The authorized user's micropub access token.
-      next_url (string): The optional URL that was passed to authorize.
+      state (string): The optional state that was passed to authorize.
       error (string): describes the error encountered if any. It is possible
         that the authentication step will succeed but the access token step
         will fail, in which case me will be non-None, and error will describe
         this condition.
     """
     def __init__(self, me=None, micropub_endpoint=None,
-                 access_token=None, next_url=None, error=None):
+                 access_token=None, state=None, error=None):
         self.me = me
         self.micropub_endpoint = micropub_endpoint
         self.access_token = access_token
-        self.next_url = next_url
+        self.next_url = self.state = state
         self.error = error
