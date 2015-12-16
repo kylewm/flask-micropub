@@ -63,5 +63,5 @@ https://indiewebcamp.com/IndieAuth and https://indiewebcamp.com/Micropub
 API
 ---
 
-.. automodule:: mf2util
+.. automodule:: flask_micropub
    :members:

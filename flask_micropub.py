@@ -27,13 +27,16 @@ DEFAULT_AUTH_URL = 'https://indieauth.com/auth'
 class MicropubClient:
     """Flask-Micropub provides support for IndieAuth/Micropub
     authentication and authorization.
-
-    Args:
-      app (flask.Flask, optional): the flask application to extend.
-      client_id (string, optional): the IndieAuth client id, will be displayed
-        when the user is asked to authorize this client.
     """
+
     def __init__(self, app=None, client_id=None):
+        """Initialize the Micropub extension
+
+        Args:
+          app (flask.Flask, optional): the flask application to extend.
+          client_id (string, optional): the IndieAuth client id, will be displayed
+            when the user is asked to authorize this client.
+        """
         self.app = app
         self.client_id = client_id
         if app is not None:
@@ -305,9 +308,13 @@ class AuthResponse:
     Attributes:
       me (string): The authenticated user's URL. This will be non-None if and
         only if the user was successfully authenticated.
+
       micropub_endpoint (string): The endpoint to POST micropub requests to.
+
       access_token (string): The authorized user's micropub access token.
+
       state (string): The optional state that was passed to authorize.
+
       error (string): describes the error encountered if any. It is possible
         that the authentication step will succeed but the access token step
         will fail, in which case me will be non-None, and error will describe
