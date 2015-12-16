@@ -308,13 +308,9 @@ class AuthResponse:
     Attributes:
       me (string): The authenticated user's URL. This will be non-None if and
         only if the user was successfully authenticated.
-
       micropub_endpoint (string): The endpoint to POST micropub requests to.
-
       access_token (string): The authorized user's micropub access token.
-
       state (string): The optional state that was passed to authorize.
-
       error (string): describes the error encountered if any. It is possible
         that the authentication step will succeed but the access token step
         will fail, in which case me will be non-None, and error will describe
