@@ -1,3 +1,5 @@
+[![Documentation Status](https://readthedocs.org/projects/flask-micropub/badge/?version=latest)](http://flask-micropub.readthedocs.org/en/latest/?badge=latest)
+
 # Flask-Micropub
 
 A Flask extension to support IndieAuth and Micropub clients.
