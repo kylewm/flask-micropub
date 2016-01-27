@@ -224,28 +224,37 @@ class MicropubClient:
         return AuthResponse(me=confirmed_me, state=state)
 
     def _handle_authorize_response(self):
-        authenticate_response = self._handle_authenticate_response()
         code = flask.request.args.get('code')
         wrapped_state = flask.request.args.get('state')
         me = flask.request.args.get('me')
         redirect_uri = flask.url_for(flask.request.endpoint, _external=True)
 
-        if authenticate_response.error:
-            return authenticate_response
+        if wrapped_state and '|' in wrapped_state:
+            csrf_token, state = wrapped_state.split('|', 1)
+        else:
+            csrf_token = state = None
+
+        if not csrf_token:
+            return AuthResponse(
+                state=state, error='no CSRF token in response')
+
+        if csrf_token != flask.session.get('_micropub_csrf_token'):
+            return AuthResponse(
+                state=state, error='mismatched CSRF token')
 
         token_url, micropub_url = self._discover_endpoints(me)[1:]
 
         if not token_url or not micropub_url:
             # successfully auth'ed user, no micropub endpoint
             return AuthResponse(
-                me=authenticate_response.me,
-                state=authenticate_response.state,
+                me=me,
+                state=state,
                 error='no micropub endpoint found.')
 
         # request an access token
         token_data = {
             'code': code,
-            'me': authenticate_response.me,
+            'me': me,
             'redirect_uri': redirect_uri,
             'client_id': self.client_id,
             'state': wrapped_state,
@@ -260,26 +269,29 @@ class MicropubClient:
 
         if token_response.status_code != 200:
             return AuthResponse(
-                me=authenticate_response.me,
-                state=authenticate_response.state,
+                me=me,
+                state=state,
                 error='bad response from token endpoint: {}'
                 .format(token_response))
 
         tdata = parse_qs(token_response.text)
         if 'access_token' not in tdata:
             return AuthResponse(
-                me=authenticate_response.me,
-                state=authenticate_response.state,
+                me=me,
+                state=state,
                 error='response from token endpoint missing access_token: {}'
                 .format(tdata))
 
         # success!
         access_token = tdata.get('access_token')[0]
+        confirmed_me = tdata.get('me')[0]
+        confirmed_scope = tdata.get('scope')[0]
         return AuthResponse(
-            me=authenticate_response.me,
+            me=confirmed_me,
             micropub_endpoint=micropub_url,
             access_token=access_token,
-            state=authenticate_response.state)
+            scope=confirmed_scope,
+            state=state)
 
     def _discover_endpoints(self, me):
         me_response = requests.get(me)
@@ -311,15 +323,18 @@ class AuthResponse:
       micropub_endpoint (string): The endpoint to POST micropub requests to.
       access_token (string): The authorized user's micropub access token.
       state (string): The optional state that was passed to authorize.
+      scope (string): The scope that comes with the micropub access token
       error (string): describes the error encountered if any. It is possible
         that the authentication step will succeed but the access token step
         will fail, in which case me will be non-None, and error will describe
         this condition.
     """
     def __init__(self, me=None, micropub_endpoint=None,
-                 access_token=None, state=None, error=None):
+                 access_token=None, state=None, scope=None,
+                 error=None):
         self.me = me
         self.micropub_endpoint = micropub_endpoint
         self.access_token = access_token
         self.next_url = self.state = state
+        self.scope = scope
         self.error = error

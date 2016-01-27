@@ -1,6 +1,14 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## 0.2.5 - 2016-01-27
+### Changed
+- Bugfix: authorization_handler was burning the auth code by
+  delegating to authentication_handler. This broke authorization for
+  endpoints that only allow codes to be used once. A side effect of
+  this is that authorization no longer falls back to authentication
+  when there is no token_endpoint or the token_endpoint request fails.
+
 ## 0.2.4 - 2015-12-13
 ### Changed
 - Replace `next_url` parameter with more general `state`
