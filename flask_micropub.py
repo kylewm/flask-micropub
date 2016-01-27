@@ -151,7 +151,7 @@ class MicropubClient:
         """
         @functools.wraps(f)
         def decorated():
-            resp = self._handle_authorize_response()
+            resp = self._handle_authenticate_response()
             return f(resp)
         self._authenticated_handler = decorated
         return decorated
