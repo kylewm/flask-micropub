@@ -1,6 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+
+## 0.2.7 - 2016-03-18
+### Changed
+- Allow all 2xx responses to indicate success.
+
 ## 0.2.6 - 2016-03-18
 ### Changed
 - Support discovering endpoints from HTTP Link headers in addition
