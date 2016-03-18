@@ -1,6 +1,11 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## 0.2.6 - 2016-03-18
+### Changed
+- Support discovering endpoints from HTTP Link headers in addition
+  to searching the body of the page.
+
 ## 0.2.5 - 2016-01-27
 ### Changed
 - Bugfix: authorization_handler was burning the auth code by

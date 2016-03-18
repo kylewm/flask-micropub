@@ -298,14 +298,23 @@ class MicropubClient:
         if me_response.status_code != 200:
             return None, None, None
 
-        soup = bs4.BeautifulSoup(me_response.text)
-        auth_endpoint = soup.find('link', {'rel': 'authorization_endpoint'})
-        token_endpoint = soup.find('link', {'rel': 'token_endpoint'})
-        micropub_endpoint = soup.find('link', {'rel': 'micropub'})
+        auth_endpoint = me_response.links.get('authorization_endpoint', {}).get('url')
+        token_endpoint = me_response.links.get('token_endpoint', {}).get('url')
+        micropub_endpoint = me_response.links.get('micropub', {}).get('url')
 
-        return (auth_endpoint and auth_endpoint['href'],
-                token_endpoint and token_endpoint['href'],
-                micropub_endpoint and micropub_endpoint['href'])
+        if not auth_endpoint or not token_endpoint or not micropub_endpoint:
+            soup = bs4.BeautifulSoup(me_response.text)
+            if not auth_endpoint:
+                auth_link = soup.find('link', {'rel': 'authorization_endpoint'})
+                auth_endpoint = auth_link and auth_link['href']
+            if not token_endpoint:
+                token_link = soup.find('link', {'rel': 'token_endpoint'})
+                token_endpoint = token_link and token_link['href']
+            if not micropub_endpoint:
+                micropub_link = soup.find('link', {'rel': 'micropub'})
+                micropub_endpoint = micropub_link and micropub_link['href']
+
+        return auth_endpoint, token_endpoint, micropub_endpoint
 
     @staticmethod
     def flask_endpoint_for_function(func):
