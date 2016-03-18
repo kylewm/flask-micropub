@@ -206,7 +206,7 @@ class MicropubClient:
             response.text)
 
         rdata = parse_qs(response.text)
-        if response.status_code != 200:
+        if response.status_code < 200 || response.status_code >= 300:
             error_vals = rdata.get('error')
             error_descs = rdata.get('error_description')
             return AuthResponse(
@@ -267,7 +267,7 @@ class MicropubClient:
             'Flask-Micropub: token response: %d - %s',
             token_response.status_code, token_response.text)
 
-        if token_response.status_code != 200:
+        if token_response.status_code < 200 || token_response.status_code >= 300:
             return AuthResponse(
                 me=me,
                 state=state,
@@ -295,7 +295,7 @@ class MicropubClient:
 
     def _discover_endpoints(self, me):
         me_response = requests.get(me)
-        if me_response.status_code != 200:
+        if me_response.status_code < 200 || me_response.status_code >= 300:
             return None, None, None
 
         auth_endpoint = me_response.links.get('authorization_endpoint', {}).get('url')
