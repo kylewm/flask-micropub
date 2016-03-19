@@ -28,9 +28,9 @@ setup(
         'BeautifulSoup4',
     ],
     tests_require=[
-        'tox',
         'mock',
     ],
+    test_suite='tests',
     classifiers=[
         'Environment :: Web Environment',
         'Intended Audience :: Developers',
