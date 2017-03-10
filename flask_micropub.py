@@ -206,7 +206,10 @@ class MicropubClient:
             'Flask-Micropub: auth response: %d - %s', response.status_code,
             response.text)
 
-        rdata = parse_qs(response.text)
+        try:
+            rdata = dict((k,[v]) for (k,v) in response.json().items())
+        except ValueError:
+            rdata = parse_qs(response.text)
         if response.status_code < 200 or response.status_code >= 300:
             error_vals = rdata.get('error')
             error_descs = rdata.get('error_description')
@@ -276,7 +279,10 @@ class MicropubClient:
                 error='bad response from token endpoint: {}'
                 .format(token_response))
 
-        tdata = parse_qs(token_response.text)
+        try:
+            tdata = dict((k,[v]) for (k,v) in token_response.json().items())
+        except ValueError:
+            tdata = parse_qs(token_response.text)
         if 'access_token' not in tdata:
             return AuthResponse(
                 me=me,
