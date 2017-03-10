@@ -135,6 +135,7 @@ class MicropubClient:
             'me': me,
             'client_id': self.client_id,
             'redirect_uri': redirect_url,
+            'response_type': 'code',
             'state': '{}|{}'.format(csrf_token, state or ''),
         }
         if scope:
