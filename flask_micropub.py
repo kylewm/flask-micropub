@@ -259,6 +259,7 @@ class MicropubClient:
             'redirect_uri': redirect_uri,
             'client_id': self.client_id,
             'state': wrapped_state,
+            'grant_type': 'authorization_code',
         }
         flask.current_app.logger.debug(
             'Flask-Micropub: requesting access token from: %s, data: %s',
