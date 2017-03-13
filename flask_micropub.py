@@ -135,6 +135,7 @@ class MicropubClient:
             'me': me,
             'client_id': self.client_id,
             'redirect_uri': redirect_url,
+            'response_type': 'code',
             'state': '{}|{}'.format(csrf_token, state or ''),
         }
         if scope:
@@ -205,7 +206,10 @@ class MicropubClient:
             'Flask-Micropub: auth response: %d - %s', response.status_code,
             response.text)
 
-        rdata = parse_qs(response.text)
+        try:
+            rdata = dict((k,[v]) for (k,v) in response.json().items())
+        except ValueError:
+            rdata = parse_qs(response.text)
         if response.status_code < 200 or response.status_code >= 300:
             error_vals = rdata.get('error')
             error_descs = rdata.get('error_description')
@@ -258,6 +262,7 @@ class MicropubClient:
             'redirect_uri': redirect_uri,
             'client_id': self.client_id,
             'state': wrapped_state,
+            'grant_type': 'authorization_code',
         }
         flask.current_app.logger.debug(
             'Flask-Micropub: requesting access token from: %s, data: %s',
@@ -274,7 +279,10 @@ class MicropubClient:
                 error='bad response from token endpoint: {}'
                 .format(token_response))
 
-        tdata = parse_qs(token_response.text)
+        try:
+            tdata = dict((k,[v]) for (k,v) in token_response.json().items())
+        except ValueError:
+            tdata = parse_qs(token_response.text)
         if 'access_token' not in tdata:
             return AuthResponse(
                 me=me,
