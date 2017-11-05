@@ -1,6 +1,12 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## 0.2.8 - 2017-11-04
+### Changed
+- Added params to auth requests to support micropub.rocks tests
+
+### Added
+- support JSON auth responses from token endpoints
 
 ## 0.2.7 - 2016-03-18
 ### Changed
